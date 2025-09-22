@@ -6,7 +6,6 @@ local M = {}
 function M.setup(opts)
 	config.update(opts)
 	-- Your setup code here
-	vim.notify(config.current.test_message)
 	-- Create user commands: ScratchDelete, ScratchSearch, ScratchNew
 	vim.api.nvim_create_user_command("ScratchNew", function()
 		core.create_scratch_file()
