@@ -38,11 +38,9 @@ use {
 ```lua
 {
     'diegoortizmatajira/workspace-scratch-files.nvim',
-    config = function()
-        require('workspace-scratch-files').setup({
+    opts = {
             -- Your configuration here
-        })
-    end
+        },
 }
 ```
 
@@ -64,7 +62,7 @@ The plugin provides a default configuration that you can customize:
             local cwd = vim.fn.getcwd()
             local last_folder = vim.fn.fnamemodify(cwd, ":t")
             local hashed = vim.fn.sha256(cwd)
-            local custom_name = string.format("%s - %s", last_folder, 
+            local custom_name = string.format("%s - %s", last_folder,
                 string.sub(hashed, 1, 8))
             return vim.fn.stdpath("data") .. "/ws-scratches/" .. custom_name .. "/"
         end,
@@ -102,36 +100,24 @@ require('workspace-scratch-files').setup({
 
 ## Usage
 
-Once installed, the plugin will automatically manage scratch files for you
-based on your configuration.
+### Available Commands
 
-- **Global Scratch Files**: Files accessible across all workspaces.
-- **Workspace Scratch Files**: Files specific to the current workspace directory.
+- **ScratchNew**: Create a new scratch file.
+- **ScratchSearch**: Search existing scratch files.
+- **ScratchDelete**: Delete a specific scratch file.
 
-### Example Commands
-
-Below are examples of how to access the global and workspace scratch files:
-
-#### Open Global Scratch File
-
-```vim
-:lua print(require('workspace-scratch-files.config').default.sources.global())
-```
-
-#### Open Workspace Scratch File
-
-```vim
-:lua print(require('workspace-scratch-files.config').default.sources.workspace())
-```
+To use these commands, simply type them in Neovim's command mode (e.g., `:ScratchNew`).
 
 ---
 
 ## License
 
-This plugin is released under the MIT License. See [LICENSE](./LICENSE) for more information.
+This plugin is released under the MIT License. See [LICENSE](./LICENSE) for
+more information.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests for any feature requests or bug fixes.
+Contributions are welcome! Please feel free to submit issues or pull requests
+for any feature requests or bug fixes.
