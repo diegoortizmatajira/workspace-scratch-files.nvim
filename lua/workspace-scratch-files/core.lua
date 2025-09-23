@@ -1,4 +1,5 @@
 local config = require("workspace-scratch-files.config")
+local selector = require("workspace-scratch-files.selector")
 local M = {}
 
 --- @class Scratch.File
@@ -27,82 +28,38 @@ local function get_sources()
 	return sources
 end
 
---- Retrieves all files from the specified source path.
---- @param source_path string The path to the source directory.
---- @param icon string The icon associated with the source.
---- @param source string The name of the source.
---- @return Scratch.File[] A list of scratch files found in the source directory.
-local function get_scratches_from(source_path, icon, source)
-	-- Use vim.fn.glob to get all files in the directory
-	local files = vim.fn.glob(source_path .. "*", false, true)
-	local scratch_files = {}
-	for _, file in ipairs(files) do
-		table.insert(scratch_files, {
-			path = file,
-			icon = icon,
-			source = source,
-		})
+--- Prompts the user for confirmation before deleting a scratch file.
+--- @param item Scratch.File The scratch file to be deleted.
+local function confirm_delete_file(item)
+	if item then
+		vim.ui.input(
+			{ prompt = "Are you sure you want to delete " .. vim.fn.fnamemodify(item.path, ":t") .. "? (y/n): " },
+			function(input)
+				if input and (input:lower() == "y" or input:lower() == "yes") then
+					local success, err = os.remove(item.path)
+					if success then
+						vim.notify("Deleted scratch file: " .. item.path)
+					else
+						vim.notify("Error deleting file: " .. err, vim.log.levels.ERROR)
+					end
+				else
+					vim.notify("Deletion cancelled.", vim.log.levels.INFO)
+				end
+			end
+		)
 	end
-	return scratch_files
-end
-
---- Prompts the user to select a scratch file from all available sources and opens it.
---- If no configuration is found or no scratch files are available, appropriate notifications are shown.
---- @param callback fun(file: Scratch.File) A callback function to be called with the selected file.
-local function select_file(callback)
-	if not config.current then
-		vim.notify("Configuration not found!", vim.log.levels.ERROR)
-		return
-	end
-	local all_files = {}
-	--- Iterate over each source in the configuration
-	for source, path_or_func in pairs(config.current.sources) do
-		--- Determine the path based on whether it's a function or a string
-		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
-		local icon = config.current.icons[source] or config.current.icons.default
-		local files = get_scratches_from(path, icon, source)
-		vim.list_extend(all_files, files)
-	end
-	if vim.tbl_isempty(all_files) then
-		vim.notify("No scratch files found.", vim.log.levels.WARN)
-		return
-	end
-	vim.ui.select(all_files, {
-		format_item = function(item)
-			return string.format("%s %s (%s)", item.icon, vim.fn.fnamemodify(item.path, ":t"), item.source)
-		end,
-	}, callback)
 end
 
 function M.delete_scratch_file()
-	select_file(function(item)
-		if item then
-			--- Confirm deletion
-			vim.ui.input(
-				{ prompt = "Are you sure you want to delete " .. vim.fn.fnamemodify(item.path, ":t") .. "? (y/n): " },
-				function(input)
-					if input and (input:lower() == "y" or input:lower() == "yes") then
-						local success, err = os.remove(item.path)
-						if success then
-							vim.notify("Deleted scratch file: " .. item.path)
-						else
-							vim.notify("Error deleting file: " .. err, vim.log.levels.ERROR)
-						end
-					else
-						vim.notify("Deletion cancelled.", vim.log.levels.INFO)
-					end
-				end
-			)
-		end
-	end)
+	selector.select_file("Select a scratch file for deletion", confirm_delete_file)
 end
 
 function M.search_scratch_files()
-	select_file(function(item)
+	selector.select_file("Select a scratch file", function(item)
 		if item then
 			vim.cmd("edit " .. item.path)
 		end
-	end)
+	end, confirm_delete_file)
 end
 
 function M.create_scratch_file()

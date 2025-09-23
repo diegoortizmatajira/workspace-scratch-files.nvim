@@ -1,0 +1,133 @@
+local config = require("workspace-scratch-files.config")
+local M = {}
+
+--- Retrieves all files from the specified source path.
+--- @param source_path string The path to the source directory.
+--- @param icon string The icon associated with the source.
+--- @param source string The name of the source.
+--- @return Scratch.File[] A list of scratch files found in the source directory.
+local function get_scratches_from(source_path, icon, source)
+	-- Use vim.fn.glob to get all files in the directory
+	local files = vim.fn.glob(source_path .. "*", false, true)
+	local scratch_files = {}
+	for _, file in ipairs(files) do
+		table.insert(scratch_files, {
+			path = file,
+			icon = icon,
+			source = source,
+		})
+	end
+	return scratch_files
+end
+
+--- Retrieves all scratch files from all configured sources.
+--- @return Scratch.File[]? A list of all scratch files from all sources.
+local function get_all_scratches()
+	if not config.current then
+		vim.notify("Configuration not found!", vim.log.levels.ERROR)
+		return nil
+	end
+	local all_files = {}
+	for source, path_or_func in pairs(config.current.sources) do
+		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
+		local icon = config.current.icons[source] or config.current.icons.default
+		local files = get_scratches_from(path, icon, source)
+		vim.list_extend(all_files, files)
+	end
+	if vim.tbl_isempty(all_files) then
+		vim.notify("No scratch files found.", vim.log.levels.WARN)
+		return nil
+	end
+	return all_files
+end
+
+--- Prompts the user to select a scratch file from all available sources and opens it.
+--- If no configuration is found or no scratch files are available, appropriate notifications are shown.
+--- @param title string The title for the selection prompt.
+--- @param callback fun(file: Scratch.File) A callback function to be called with the selected file.
+--- @param delete_callback fun(file: Scratch.File)? An optional callback function to be called for deleting a file.
+local function select_file_with_telescope(title, callback, delete_callback)
+	local has_telescope, _ = pcall(require, "telescope")
+	if not has_telescope then
+		return false
+	end
+	local all_files = get_all_scratches()
+	if all_files then
+		local pickers = require("telescope.pickers")
+		local finders = require("telescope.finders")
+		local actions = require("telescope.actions")
+		local action_state = require("telescope.actions.state")
+		local conf = require("telescope.config").values
+		local selector = function(opts)
+			opts = opts or {}
+			pickers
+				.new(opts, {
+					prompt_title = title or "Select Scratch File",
+					finder = finders.new_table({
+						results = all_files,
+						entry_maker = function(entry)
+							return {
+								value = entry,
+								path = entry.path,
+								display = string.format(
+									"%s %s (%s)",
+									entry.icon,
+									vim.fn.fnamemodify(entry.path, ":t"),
+									entry.source
+								),
+								ordinal = entry.path,
+							}
+						end,
+					}),
+					previewer = conf.file_previewer(opts),
+					sorter = conf.generic_sorter(opts),
+					attach_mappings = function(prompt_bufnr, map)
+						actions.select_default:replace(function()
+							actions.close(prompt_bufnr)
+							local selection = action_state.get_selected_entry()
+							if selection then
+								callback(selection.value)
+							end
+						end)
+						if delete_callback then
+							local delete_scratch_file = function()
+								actions.close(prompt_bufnr)
+								local selection = action_state.get_selected_entry()
+								if selection then
+									delete_callback(selection.value)
+								end
+							end
+							map({ "i", "n" }, "<c-d>", delete_scratch_file)
+						end
+						return true
+					end,
+				})
+				:find()
+		end
+		-- to execute the function
+		selector()
+	end
+	return true
+end
+
+--- Prompts the user to select a scratch file from all available sources and opens it.
+--- If no configuration is found or no scratch files are available, appropriate notifications are shown.
+--- @param title string The title for the selection prompt.
+--- @param callback fun(file: Scratch.File) A callback function to be called with the selected file.
+--- @param delete_callback fun(file: Scratch.File)? An optional callback function to be called for deleting a file.
+function M.select_file(title, callback, delete_callback)
+	if select_file_with_telescope(title, callback, delete_callback) then
+		return
+	end
+	-- Fallback to vim.ui.select if Telescope is not available
+	local all_files = get_all_scratches()
+	if all_files then
+		vim.ui.select(all_files, {
+			prompt = title or "Select Scratch File:",
+			format_item = function(item)
+				return string.format("%s %s (%s)", item.icon, vim.fn.fnamemodify(item.path, ":t"), item.source)
+			end,
+		}, callback)
+	end
+end
+return M
