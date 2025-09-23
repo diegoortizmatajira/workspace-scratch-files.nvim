@@ -1,6 +1,7 @@
 --- @class Scratch.config
 --- @field sources table<string, string|fun():string> A table containing source paths for scratch files.
 --- @field icons table<string, string> A table containing icons for different scratch file sources.
+--- @field highlight table<string, string> A table containing icons for different scratch file sources.
 
 local folder = "/ws-scratches"
 --- Retrieves the path for the workspace-specific scratch file source.
@@ -36,9 +37,14 @@ local C = {
 			workspace = get_workspace_source,
 		},
 		icons = {
-			global = "🌐",
-			workspace = " ",
+			global = "󰥨 ",
+			workspace = "󱧶 ",
 			default = "󰚝 ",
+		},
+		highlight = {
+			global = "TelescopeResultsFunction",
+			workspace = "TelescopeResultsNumber",
+			default = "TelescopeResultsOperator",
 		},
 	},
 	--- Current configuration settings for the Scratch plugin.

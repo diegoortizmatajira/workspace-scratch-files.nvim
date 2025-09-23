@@ -3,17 +3,18 @@ local M = {}
 
 --- Retrieves all files from the specified source path.
 --- @param source_path string The path to the source directory.
---- @param icon string The icon associated with the source.
 --- @param source string The name of the source.
 --- @return Scratch.File[] A list of scratch files found in the source directory.
-local function get_scratches_from(source_path, icon, source)
+local function get_scratches_from(source_path, source)
 	-- Use vim.fn.glob to get all files in the directory
 	local files = vim.fn.glob(source_path .. "*", false, true)
 	local scratch_files = {}
 	for _, file in ipairs(files) do
 		table.insert(scratch_files, {
 			path = file,
-			icon = icon,
+			icon = config.current and (config.current.icons[source] or config.current.icons.default) or "󰚝 ",
+			icon_hl = config.current and (config.current.highlight[source] or config.current.highlight.default)
+				or "Normal",
 			source = source,
 		})
 	end
@@ -30,8 +31,7 @@ local function get_all_scratches()
 	local all_files = {}
 	for source, path_or_func in pairs(config.current.sources) do
 		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
-		local icon = config.current.icons[source] or config.current.icons.default
-		local files = get_scratches_from(path, icon, source)
+		local files = get_scratches_from(path, source)
 		vim.list_extend(all_files, files)
 	end
 	if vim.tbl_isempty(all_files) then
@@ -74,7 +74,7 @@ local function select_file_with_telescope(title, callback, delete_callback)
 		local make_display = function(entry)
 			local _, icon_hl, icon = utils.transform_devicons(entry.value.path, "", false) -- to get the correct icon based on file type
 			return displayer({
-				{ entry.value.icon, "TelescopeResultsFunction" },
+				{ entry.value.icon, entry.value.icon_hl },
 				{ icon or " ", icon_hl },
 				vim.fn.fnamemodify(entry.value.path, ":t"),
 				{ entry.value.source or "", "TelescopeResultsComment" },
@@ -154,10 +154,11 @@ local function get_sources()
 	local sources = {}
 	for source, path_or_func in pairs(config.current.sources) do
 		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
-		local icon = config.current.icons[source] or config.current.icons.default
 		table.insert(sources, {
 			path = path,
-			icon = icon,
+			icon = config.current and (config.current.icons[source] or config.current.icons.default) or "󰚝 ",
+			icon_hl = config.current and (config.current.highlight[source] or config.current.highlight.default)
+                or "Normal",
 			source = source,
 		})
 	end
@@ -196,7 +197,7 @@ local function select_source_with_telescope(callback, title)
 	-- Custom display function to show icon and source name
 	local make_display = function(entry)
 		return displayer({
-			{ entry.value.icon, "TelescopeResultsFunction" },
+			{ entry.value.icon, entry.value.icon_hl },
 			entry.value.source,
 		})
 	end

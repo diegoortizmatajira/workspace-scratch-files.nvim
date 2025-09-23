@@ -5,11 +5,13 @@ local M = {}
 --- @class Scratch.File
 --- @field path string The full path to the scratch file.
 --- @field icon string The icon associated with the scratch file.
+--- @field icon_hl string The highlight group for the icon.
 --- @field source string The source type of the scratch file (e.g., "global", "workspace").
 
 --- @class Scratch.Source
 --- @field path string The path to the source directory.
 --- @field icon string The icon associated with the source.
+--- @field icon_hl string The highlight group for the icon.
 --- @field source string The name of the source.
 
 --- Prompts the user for confirmation before deleting a scratch file.
