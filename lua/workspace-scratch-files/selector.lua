@@ -130,4 +130,92 @@ function M.select_file(title, callback, delete_callback)
 		}, callback)
 	end
 end
+
+--- Retrieves all configured sources for scratch files.
+--- @return Scratch.Source[] A list of sources with their paths and icons.
+local function get_sources()
+	local sources = {}
+	for source, path_or_func in pairs(config.current.sources) do
+		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
+		local icon = config.current.icons[source] or config.current.icons.default
+		table.insert(sources, {
+			path = path,
+			icon = icon,
+			source = source,
+		})
+	end
+	return sources
+end
+
+--- Prompts the user to select a source for creating a new scratch file using Telescope.
+--- If no configuration is found, an appropriate notification is shown.
+--- @param callback fun(source: Scratch.Source) A callback function to be called with the selected source.
+--- @param title string The title for the selection prompt.
+local function select_source_with_telescope(callback, title)
+	local has_telescope, _ = pcall(require, "telescope")
+	if not has_telescope then
+		return false
+	end
+	local sources = get_sources()
+	if vim.tbl_isempty(sources) then
+		vim.notify("No sources configured!", vim.log.levels.ERROR)
+		return true
+	end
+	local pickers = require("telescope.pickers")
+	local finders = require("telescope.finders")
+	local themes = require("telescope.themes")
+	local actions = require("telescope.actions")
+	local action_state = require("telescope.actions.state")
+	local conf = require("telescope.config").values
+	local selector = function(opts)
+		opts = opts or {}
+		pickers
+			.new(opts, {
+				prompt_title = title,
+				finder = finders.new_table({
+					results = sources,
+					entry_maker = function(entry)
+						return {
+							value = entry,
+							path = entry.path,
+							display = string.format("%s %s", entry.icon, entry.source),
+							ordinal = entry.source,
+						}
+					end,
+				}),
+				sorter = conf.generic_sorter(opts),
+				attach_mappings = function(prompt_bufnr)
+					actions.select_default:replace(function()
+						actions.close(prompt_bufnr)
+						local selection = action_state.get_selected_entry()
+						if selection then
+							callback(selection.value)
+						end
+					end)
+					return true
+				end,
+			})
+			:find()
+	end
+	-- to execute the function
+	selector(themes.get_dropdown({}))
+	return true
+end
+
+--- Prompts the user to select a source for creating a new scratch file.
+--- If no configuration is found, an appropriate notification is shown.
+--- @param callback fun(source: Scratch.Source) A callback function to be called with the selected source.
+--- @param title? string The title for the selection prompt.
+function M.select_source(callback, title)
+	title = title or "Select Scratch File Source"
+	if select_source_with_telescope(callback, title) then
+		return
+	end
+	vim.ui.select(get_sources(), {
+		prompt = title,
+		format_item = function(item)
+			return string.format("%s %s", item.icon, item.source)
+		end,
+	}, callback)
+end
 return M

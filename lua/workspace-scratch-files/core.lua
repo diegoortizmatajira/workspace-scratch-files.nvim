@@ -12,22 +12,6 @@ local M = {}
 --- @field icon string The icon associated with the source.
 --- @field source string The name of the source.
 
---- Retrieves all configured sources for scratch files.
---- @return Scratch.Source[] A list of sources with their paths and icons.
-local function get_sources()
-	local sources = {}
-	for source, path_or_func in pairs(config.current.sources) do
-		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
-		local icon = config.current.icons[source] or config.current.icons.default
-		table.insert(sources, {
-			path = path,
-			icon = icon,
-			source = source,
-		})
-	end
-	return sources
-end
-
 --- Prompts the user for confirmation before deleting a scratch file.
 --- @param item Scratch.File The scratch file to be deleted.
 local function confirm_delete_file(item)
@@ -63,15 +47,8 @@ function M.search_scratch_files()
 end
 
 function M.create_scratch_file()
-	vim.notify("Creating a new scratch file...")
-	vim.ui.select(get_sources(), {
-		prompt = "Select Scratch File Source:",
-		format_item = function(item)
-			return string.format("%s %s", item.icon, item.source)
-		end,
-	}, function(source)
+	selector.select_source(function(source)
 		if not source then
-			vim.notify("Scratch file creation cancelled.", vim.log.levels.WARN)
 			return
 		end
 		vim.ui.input({ prompt = "Enter scratch file name: " }, function(input)
@@ -89,7 +66,7 @@ function M.create_scratch_file()
 			vim.cmd("edit " .. full_path)
 			vim.notify("Created new scratch file: " .. full_path)
 		end)
-	end)
+	end, "Select the scope for the new scratch file")
 end
 
 return M
