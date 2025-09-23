@@ -2,6 +2,8 @@
 
 A Neovim plugin for managing scratch files both globally and per workspace.
 
+Read about how it was created in my [Blog post](https://diego-ortiz.me/posts/how_to_neovim_plugin/)
+
 ---
 
 ## Features
@@ -12,6 +14,8 @@ A Neovim plugin for managing scratch files both globally and per workspace.
   workspace.
 - **Customizable Icons**: Visual differentiation for global and workspace
   sources.
+- **Telescope Integration**: Integration for rich selection (Preview, and
+  colored icons)
 
 ---
 
@@ -68,9 +72,14 @@ The plugin provides a default configuration that you can customize:
         end,
     },
     icons = {
-        global = "🌐",
-        workspace = "",
-        default = "󰚝",
+        global = "󰥨 ",
+        workspace = "󱧶 ",
+        default = "󰚝 ",
+    },
+    highlight = {
+        global = "TelescopeResultsFunction",
+        workspace = "TelescopeResultsNumber",
+        default = "TelescopeResultsOperator",
     },
 }
 ```
