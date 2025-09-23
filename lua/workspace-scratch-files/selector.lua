@@ -58,6 +58,28 @@ local function select_file_with_telescope(title, callback, delete_callback)
 		local actions = require("telescope.actions")
 		local action_state = require("telescope.actions.state")
 		local conf = require("telescope.config").values
+		local entry_display = require("telescope.pickers.entry_display")
+		local utils = require("telescope.utils")
+		-- Define how each entry will be displayed
+		local displayer = entry_display.create({
+			separator = " ",
+			items = {
+				{ width = 2 },
+				{},
+				{},
+				{ remaining = true },
+			},
+		})
+		-- Custom display function to show icon and source name
+		local make_display = function(entry)
+			local _, icon_hl, icon = utils.transform_devicons(entry.value.path, "", false) -- to get the correct icon based on file type
+			return displayer({
+				{ entry.value.icon, "TelescopeResultsFunction" },
+				{ icon or " ", icon_hl },
+				vim.fn.fnamemodify(entry.value.path, ":t"),
+				{ entry.value.source or "", "TelescopeResultsComment" },
+			})
+		end
 		local selector = function(opts)
 			opts = opts or {}
 			pickers
@@ -69,12 +91,7 @@ local function select_file_with_telescope(title, callback, delete_callback)
 							return {
 								value = entry,
 								path = entry.path,
-								display = string.format(
-									"%s %s (%s)",
-									entry.icon,
-									vim.fn.fnamemodify(entry.path, ":t"),
-									entry.source
-								),
+								display = make_display,
 								ordinal = entry.path,
 							}
 						end,
@@ -167,6 +184,22 @@ local function select_source_with_telescope(callback, title)
 	local actions = require("telescope.actions")
 	local action_state = require("telescope.actions.state")
 	local conf = require("telescope.config").values
+	local entry_display = require("telescope.pickers.entry_display")
+	-- Define how each entry will be displayed
+	local displayer = entry_display.create({
+		separator = " ",
+		items = {
+			{ width = 2 },
+			{ remaining = true },
+		},
+	})
+	-- Custom display function to show icon and source name
+	local make_display = function(entry)
+		return displayer({
+			{ entry.value.icon, "TelescopeResultsFunction" },
+			entry.value.source,
+		})
+	end
 	local selector = function(opts)
 		opts = opts or {}
 		pickers
@@ -178,7 +211,8 @@ local function select_source_with_telescope(callback, title)
 						return {
 							value = entry,
 							path = entry.path,
-							display = string.format("%s %s", entry.icon, entry.source),
+							-- display = string.format("%s %s", entry.icon, entry.source),
+							display = make_display,
 							ordinal = entry.source,
 						}
 					end,
