@@ -139,6 +139,7 @@ function M.select_file(title, callback, delete_callback)
 		return
 	end
 	-- Fallback to vim.ui.select if Telescope is not available
+	-- Note: delete_callback is not supported in the fallback UI; use :ScratchDelete instead
 	local all_files = get_all_scratches()
 	if all_files then
 		vim.ui.select(all_files, {

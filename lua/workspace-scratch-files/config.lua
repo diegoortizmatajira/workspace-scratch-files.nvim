@@ -16,8 +16,16 @@ local function get_workspace_source()
 	-- Hash the current working directory to ensure uniqueness
 	local hashed = vim.fn.sha256(cwd)
 	-- Create a custom name using the last folder and the first 8 characters of the hash
-	local custom_name = string.format("%s - %s", last_folder, string.sub(hashed, 1, 8))
-	return vim.fn.stdpath("data") .. folder .. "/" .. custom_name .. "/"
+	local custom_name = string.format("%s-%s", last_folder, string.sub(hashed, 1, 8))
+	local base = vim.fn.stdpath("data") .. folder .. "/"
+	-- Migrate legacy directory format ("name - hash") to new format ("name-hash")
+	local legacy_name = string.format("%s - %s", last_folder, string.sub(hashed, 1, 8))
+	local legacy_path = base .. legacy_name
+	local new_path = base .. custom_name
+	if vim.fn.isdirectory(legacy_path) == 1 and vim.fn.isdirectory(new_path) == 0 then
+		vim.fn.rename(legacy_path, new_path)
+	end
+	return new_path .. "/"
 end
 
 --- Retrieves the path for the global scratch file source.
