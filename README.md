@@ -11,11 +11,21 @@ Read about how it was created in my [Blog post](https://diego-ortiz.me/posts/how
 - **Global Scratch Files**: Store scratch notes accessible across all your
   Neovim sessions.
 - **Workspace-specific Scratch Files**: Unique scratch files for each
-  workspace.
-- **Customizable Icons**: Visual differentiation for global and workspace
-  sources.
-- **Telescope Integration**: Integration for rich selection (Preview, and
-  colored icons)
+  workspace, identified by directory name and hash.
+- **Customizable Icons and Highlights**: Visual differentiation for global and
+  workspace sources with configurable highlight groups.
+- **Telescope Integration**: Optional integration for rich selection with file
+  preview, colored icons, and `<c-d>` shortcut to delete files from the search
+  picker.
+- **Fallback UI**: Works without Telescope using `vim.ui.select`.
+
+---
+
+## Requirements
+
+- Neovim >= 0.10
+- Optional: [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) for enhanced file picker with preview and icons
+- Optional: [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) for file type icons in the Telescope picker
 
 ---
 
@@ -43,8 +53,8 @@ use {
 {
     'diegoortizmatajira/workspace-scratch-files.nvim',
     opts = {
-            -- Your configuration here
-        },
+        -- Your configuration here
+    },
 }
 ```
 
@@ -66,7 +76,7 @@ The plugin provides a default configuration that you can customize:
             local cwd = vim.fn.getcwd()
             local last_folder = vim.fn.fnamemodify(cwd, ":t")
             local hashed = vim.fn.sha256(cwd)
-            local custom_name = string.format("%s - %s", last_folder,
+            local custom_name = string.format("%s-%s", last_folder,
                 string.sub(hashed, 1, 8))
             return vim.fn.stdpath("data") .. "/ws-scratches/" .. custom_name .. "/"
         end,
@@ -77,9 +87,9 @@ The plugin provides a default configuration that you can customize:
         default = "󰚝 ",
     },
     highlight = {
-        global = "TelescopeResultsFunction",
-        workspace = "TelescopeResultsNumber",
-        default = "TelescopeResultsOperator",
+        global = "Function",
+        workspace = "Number",
+        default = "Operator",
     },
 }
 ```
@@ -87,7 +97,8 @@ The plugin provides a default configuration that you can customize:
 ### Customizing Configuration
 
 You can override the default configuration by passing your custom settings to
-the `setup` function:
+the `setup` function. Sources can be either strings (static paths) or functions
+(evaluated at runtime):
 
 ```lua
 require('workspace-scratch-files').setup({
@@ -98,9 +109,14 @@ require('workspace-scratch-files').setup({
         end,
     },
     icons = {
-        global = "🌍",
-        workspace = "🏢",
-        default = "📝",
+        global = "G ",
+        workspace = "W ",
+        default = "? ",
+    },
+    highlight = {
+        global = "DiagnosticInfo",
+        workspace = "DiagnosticHint",
+        default = "Comment",
     },
 })
 ```
@@ -109,13 +125,33 @@ require('workspace-scratch-files').setup({
 
 ## Usage
 
-### Available Commands
+### Commands
 
-- **ScratchNew**: Create a new scratch file.
-- **ScratchSearch**: Search existing scratch files.
-- **ScratchDelete**: Delete a specific scratch file.
+| Command | Description |
+|---|---|
+| `:ScratchNew` | Create a new scratch file. Prompts for scope (global/workspace) and filename. |
+| `:ScratchSearch` | Search and open existing scratch files. With Telescope, press `<c-d>` to delete. |
+| `:ScratchDelete` | Select and delete a scratch file (with confirmation). |
+| `:ScratchDelete!` | Select and delete a scratch file (skips confirmation). |
 
-To use these commands, simply type them in Neovim's command mode (e.g., `:ScratchNew`).
+### Suggested Keymaps
+
+```lua
+vim.keymap.set("n", "<leader>sn", "<cmd>ScratchNew<cr>", { desc = "New scratch file" })
+vim.keymap.set("n", "<leader>ss", "<cmd>ScratchSearch<cr>", { desc = "Search scratch files" })
+vim.keymap.set("n", "<leader>sd", "<cmd>ScratchDelete<cr>", { desc = "Delete scratch file" })
+```
+
+---
+
+## Running Tests
+
+Tests use [plenary.nvim](https://github.com/nvim-telescope/plenary.nvim). Run
+them from within Neovim:
+
+```vim
+:PlenaryBustedDirectory test/
+```
 
 ---
 
