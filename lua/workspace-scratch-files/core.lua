@@ -62,11 +62,16 @@ function M.create_scratch_file()
 			-- Ensure the directory exists
 			vim.fn.mkdir(vim.fn.fnamemodify(full_path, ":h"), "p")
 			-- Create the file if it doesn't exist and open it
-			if vim.fn.filereadable(full_path) == 0 then
+			local is_new = vim.fn.filereadable(full_path) == 0
+			if is_new then
 				vim.fn.writefile({}, full_path)
 			end
 			vim.cmd("edit " .. vim.fn.fnameescape(full_path))
-			vim.notify("Created new scratch file: " .. full_path)
+			if is_new then
+				vim.notify("Created new scratch file: " .. full_path)
+			else
+				vim.notify("Opened existing scratch file: " .. full_path, vim.log.levels.INFO)
+			end
 		end)
 	end, "Select the scope for the new scratch file")
 end

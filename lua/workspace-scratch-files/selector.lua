@@ -153,6 +153,10 @@ end
 --- Retrieves all configured sources for scratch files.
 --- @return Scratch.Source[] A list of sources with their paths and icons.
 local function get_sources()
+	if not config.current then
+		vim.notify("Configuration not found!", vim.log.levels.ERROR)
+		return {}
+	end
 	local sources = {}
 	for source, path_or_func in pairs(config.current.sources) do
 		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
