@@ -43,7 +43,7 @@ end
 function M.search_scratch_files()
 	selector.select_file("Select a scratch file", function(item)
 		if item then
-			vim.cmd("edit " .. item.path)
+			vim.cmd("edit " .. vim.fn.fnameescape(item.path))
 		end
 	end, confirm_delete_file)
 end
@@ -65,7 +65,7 @@ function M.create_scratch_file()
 			if vim.fn.filereadable(full_path) == 0 then
 				vim.fn.writefile({}, full_path)
 			end
-			vim.cmd("edit " .. full_path)
+			vim.cmd("edit " .. vim.fn.fnameescape(full_path))
 			vim.notify("Created new scratch file: " .. full_path)
 		end)
 	end, "Select the scope for the new scratch file")
