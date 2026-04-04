@@ -13,9 +13,9 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("ScratchSearch", function()
 		core.search_scratch_files()
 	end, { nargs = 0 })
-	vim.api.nvim_create_user_command("ScratchDelete", function()
-		core.delete_scratch_file()
-	end, { nargs = 0 })
+	vim.api.nvim_create_user_command("ScratchDelete", function(cmd)
+		core.delete_scratch_file({ force = cmd.bang })
+	end, { nargs = 0, bang = true })
 end
 
 return M

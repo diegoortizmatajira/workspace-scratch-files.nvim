@@ -14,34 +14,50 @@ local M = {}
 --- @field icon_hl string The highlight group for the icon.
 --- @field source string The name of the source.
 
---- Prompts the user for confirmation before deleting a scratch file.
+--- Deletes a scratch file and cleans up its buffer.
 --- @param item Scratch.File The scratch file to be deleted.
-local function confirm_delete_file(item)
-	if item then
-		vim.ui.input(
-			{ prompt = "Are you sure you want to delete " .. vim.fn.fnamemodify(item.path, ":t") .. "? (y/n): " },
-			function(input)
-				if input and (input:lower() == "y" or input:lower() == "yes") then
-					local success, err = os.remove(item.path)
-					if success then
-						local bufnr = vim.fn.bufnr(item.path)
-						if bufnr ~= -1 then
-							vim.api.nvim_buf_delete(bufnr, { force = true })
-						end
-						vim.notify("Deleted scratch file: " .. item.path)
-					else
-						vim.notify("Error deleting file: " .. err, vim.log.levels.ERROR)
-					end
-				else
-					vim.notify("Deletion cancelled.", vim.log.levels.INFO)
-				end
-			end
-		)
+local function delete_file(item)
+	local success, err = vim.uv.fs_unlink(item.path)
+	if success then
+		local bufnr = vim.fn.bufnr(item.path)
+		if bufnr ~= -1 then
+			vim.api.nvim_buf_delete(bufnr, { force = true })
+		end
+		vim.notify("Deleted scratch file: " .. item.path)
+	else
+		vim.notify("Error deleting file: " .. err, vim.log.levels.ERROR)
 	end
 end
 
-function M.delete_scratch_file()
-	selector.select_file("Select a scratch file for deletion", confirm_delete_file)
+--- Prompts the user for confirmation before deleting a scratch file.
+--- @param item Scratch.File The scratch file to be deleted.
+--- @param force? boolean If true, skip confirmation prompt.
+local function confirm_delete_file(item, force)
+	if not item then
+		return
+	end
+	if force then
+		delete_file(item)
+		return
+	end
+	vim.ui.input(
+		{ prompt = "Are you sure you want to delete " .. vim.fn.fnamemodify(item.path, ":t") .. "? (y/n): " },
+		function(input)
+			if input and (input:lower() == "y" or input:lower() == "yes") then
+				delete_file(item)
+			else
+				vim.notify("Deletion cancelled.", vim.log.levels.INFO)
+			end
+		end
+	)
+end
+
+--- @param opts? { force: boolean }
+function M.delete_scratch_file(opts)
+	local force = opts and opts.force or false
+	selector.select_file("Select a scratch file for deletion", function(item)
+		confirm_delete_file(item, force)
+	end)
 end
 
 function M.search_scratch_files()

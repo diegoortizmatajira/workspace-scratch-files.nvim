@@ -6,11 +6,22 @@ local M = {}
 --- @param source string The name of the source.
 --- @return Scratch.File[] A list of scratch files found in the source directory.
 local function get_scratches_from(source_path, source)
-	-- Use vim.fn.glob to get all files in the directory
-	local files = vim.tbl_filter(function(f)
-		return vim.fn.isdirectory(f) == 0
-	end, vim.fn.glob(source_path .. "*", false, true))
+	-- Scan directory for files (skip subdirectories)
 	local scratch_files = {}
+	local handle = vim.uv.fs_scandir(source_path)
+	if not handle then
+		return scratch_files
+	end
+	local files = {}
+	while true do
+		local name, typ = vim.uv.fs_scandir_next(handle)
+		if not name then
+			break
+		end
+		if typ == "file" then
+			table.insert(files, source_path .. name)
+		end
+	end
 	for _, file in ipairs(files) do
 		table.insert(scratch_files, {
 			path = file,
