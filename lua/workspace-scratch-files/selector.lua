@@ -90,7 +90,7 @@ local function select_file_with_telescope(title, callback, delete_callback)
 				{ entry.value.icon, entry.value.icon_hl },
 				{ icon or " ", icon_hl },
 				vim.fn.fnamemodify(entry.value.path, ":t"),
-				{ entry.value.source or "", "TelescopeResultsComment" },
+				{ entry.value.source or "", "Comment" },
 			})
 		end
 		local selector = function(opts)
@@ -230,7 +230,6 @@ local function select_source_with_telescope(callback, title)
 						return {
 							value = entry,
 							path = entry.path,
-							-- display = string.format("%s %s", entry.icon, entry.source),
 							display = make_display,
 							ordinal = entry.source,
 						}
