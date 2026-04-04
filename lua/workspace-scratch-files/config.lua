@@ -50,9 +50,9 @@ local C = {
 			default = "󰚝 ",
 		},
 		highlight = {
-			global = "TelescopeResultsFunction",
-			workspace = "TelescopeResultsNumber",
-			default = "TelescopeResultsOperator",
+			global = "Function",
+			workspace = "Number",
+			default = "Operator",
 		},
 	},
 	--- Current configuration settings for the Scratch plugin.
