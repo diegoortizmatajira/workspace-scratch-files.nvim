@@ -24,6 +24,10 @@ local function confirm_delete_file(item)
 				if input and (input:lower() == "y" or input:lower() == "yes") then
 					local success, err = os.remove(item.path)
 					if success then
+						local bufnr = vim.fn.bufnr(item.path)
+						if bufnr ~= -1 then
+							vim.api.nvim_buf_delete(bufnr, { force = true })
+						end
 						vim.notify("Deleted scratch file: " .. item.path)
 					else
 						vim.notify("Error deleting file: " .. err, vim.log.levels.ERROR)

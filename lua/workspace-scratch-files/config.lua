@@ -12,7 +12,7 @@ local folder = "/ws-scratches"
 local function get_workspace_source()
 	local cwd = vim.fn.getcwd()
 	-- Get the last folder name of the current working directory
-	local last_folder = vim.fn.fnamemodify(vim.fn.getcwd(), ":t")
+	local last_folder = vim.fn.fnamemodify(cwd, ":t")
 	-- Hash the current working directory to ensure uniqueness
 	local hashed = vim.fn.sha256(cwd)
 	-- Create a custom name using the last folder and the first 8 characters of the hash
