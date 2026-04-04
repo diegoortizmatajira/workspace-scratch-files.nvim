@@ -64,8 +64,12 @@ local C = {
 --- If the provided configuration is not a table or is nil, the update is ignored.
 --- @param new_config? Scratch.config new configuraton to be applied
 function C.update(new_config)
-	--- Initializes or overrides the current configuration with the new configuration.
-	--- If no current configuration exists, it defaults to the default configuration.
+	if new_config ~= nil then
+		vim.validate("config", new_config, "table")
+		vim.validate("config.sources", new_config.sources, "table", true)
+		vim.validate("config.icons", new_config.icons, "table", true)
+		vim.validate("config.highlight", new_config.highlight, "table", true)
+	end
 	C.current = vim.tbl_deep_extend("force", C.current or C.default, new_config or {})
 end
 
