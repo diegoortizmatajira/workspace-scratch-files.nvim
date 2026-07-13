@@ -6,7 +6,7 @@ local M = {}
 function M.setup(opts)
 	config.update(opts)
 	-- Your setup code here
-	-- Create user commands: ScratchDelete, ScratchSearch, ScratchNew
+	-- Create user commands: ScratchDelete, ScratchSearch, ScratchNew, ScratchMigrate
 	vim.api.nvim_create_user_command("ScratchNew", function()
 		core.create_scratch_file()
 	end, { nargs = 0 })
@@ -16,6 +16,9 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("ScratchDelete", function(cmd)
 		core.delete_scratch_file({ force = cmd.bang })
 	end, { nargs = 0, bang = true })
+	vim.api.nvim_create_user_command("ScratchMigrate", function()
+		core.migrate_scratch_file()
+	end, { nargs = 0 })
 end
 
 return M

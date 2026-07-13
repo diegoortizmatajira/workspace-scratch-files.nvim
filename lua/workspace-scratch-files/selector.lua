@@ -163,22 +163,25 @@ function M.select_file(title, callback, delete_callback)
 end
 
 --- Retrieves all configured sources for scratch files.
+--- @param exclude_source? string A source name to exclude from the results.
 --- @return Scratch.Source[] A list of sources with their paths and icons.
-local function get_sources()
+function M.get_sources(exclude_source)
 	if not config.current then
 		vim.notify("Configuration not found!", vim.log.levels.ERROR)
 		return {}
 	end
 	local sources = {}
 	for source, path_or_func in pairs(config.current.sources) do
-		local path = type(path_or_func) == "function" and path_or_func() or path_or_func
-		table.insert(sources, {
-			path = path,
-			icon = config.current and (config.current.icons[source] or config.current.icons.default) or "󰚝 ",
-			icon_hl = config.current and (config.current.highlight[source] or config.current.highlight.default)
-                or "Normal",
-			source = source,
-		})
+		if source ~= exclude_source then
+			local path = type(path_or_func) == "function" and path_or_func() or path_or_func
+			table.insert(sources, {
+				path = path,
+				icon = config.current and (config.current.icons[source] or config.current.icons.default) or "󰚝 ",
+				icon_hl = config.current and (config.current.highlight[source] or config.current.highlight.default)
+					or "Normal",
+				source = source,
+			})
+		end
 	end
 	return sources
 end
@@ -187,12 +190,13 @@ end
 --- If no configuration is found, an appropriate notification is shown.
 --- @param callback fun(source: Scratch.Source) A callback function to be called with the selected source.
 --- @param title string The title for the selection prompt.
-local function select_source_with_telescope(callback, title)
+--- @param exclude_source? string A source name to exclude from the choices.
+local function select_source_with_telescope(callback, title, exclude_source)
 	local has_telescope, _ = pcall(require, "telescope")
 	if not has_telescope then
 		return false
 	end
-	local sources = get_sources()
+	local sources = M.get_sources(exclude_source)
 	if vim.tbl_isempty(sources) then
 		vim.notify("No sources configured!", vim.log.levels.ERROR)
 		return true
@@ -258,12 +262,13 @@ end
 --- If no configuration is found, an appropriate notification is shown.
 --- @param callback fun(source: Scratch.Source) A callback function to be called with the selected source.
 --- @param title? string The title for the selection prompt.
-function M.select_source(callback, title)
+--- @param exclude_source? string A source name to exclude from the choices.
+function M.select_source(callback, title, exclude_source)
 	title = title or "Select Scratch File Source"
-	if select_source_with_telescope(callback, title) then
+	if select_source_with_telescope(callback, title, exclude_source) then
 		return
 	end
-	vim.ui.select(get_sources(), {
+	vim.ui.select(M.get_sources(exclude_source), {
 		prompt = title,
 		format_item = function(item)
 			return string.format("%s %s", item.icon, item.source)

@@ -68,6 +68,111 @@ function M.search_scratch_files()
 	end, confirm_delete_file)
 end
 
+--- Determines the configured source (scope) that owns the current buffer's file, if any.
+--- @return Scratch.File? item The scratch file info for the current buffer, or nil if it's not a scratch file.
+local function get_current_scratch_item()
+	if not config.current then
+		return nil
+	end
+	local path = vim.api.nvim_buf_get_name(0)
+	if path == "" then
+		return nil
+	end
+	for source, path_or_func in pairs(config.current.sources) do
+		local source_path = type(path_or_func) == "function" and path_or_func() or path_or_func
+		if path:sub(1, #source_path) == source_path then
+			return {
+				path = path,
+				icon = config.current.icons[source] or config.current.icons.default,
+				icon_hl = config.current.highlight[source] or config.current.highlight.default,
+				source = source,
+			}
+		end
+	end
+	return nil
+end
+
+--- Moves a scratch file to a different source (scope), keeping it open in its buffer.
+--- @param item Scratch.File The scratch file to move.
+--- @param target Scratch.Source The destination source.
+local function move_scratch_file(item, target)
+	local filename = vim.fn.fnamemodify(item.path, ":t")
+	local new_path = target.path .. filename
+	if vim.fn.filereadable(new_path) == 1 then
+		vim.notify("A file already exists at the destination: " .. new_path, vim.log.levels.ERROR)
+		return
+	end
+	vim.fn.mkdir(target.path, "p")
+	local bufnr = vim.fn.bufnr(item.path)
+	if bufnr ~= -1 then
+		vim.api.nvim_buf_set_name(bufnr, new_path)
+		vim.api.nvim_buf_call(bufnr, function()
+			vim.cmd("silent! write!")
+		end)
+		vim.uv.fs_unlink(item.path)
+		if vim.api.nvim_get_current_buf() ~= bufnr then
+			vim.cmd("buffer " .. bufnr)
+		end
+	else
+		local success, err = vim.uv.fs_rename(item.path, new_path)
+		if not success then
+			vim.notify("Error moving scratch file: " .. err, vim.log.levels.ERROR)
+			return
+		end
+		vim.cmd("edit " .. vim.fn.fnameescape(new_path))
+	end
+	vim.notify(string.format("Moved scratch file to %s scope: %s", target.source, new_path))
+end
+
+--- Prompts the user to confirm migrating a scratch file to another scope, then performs the move.
+--- @param item Scratch.File The scratch file to migrate.
+local function confirm_migrate(item)
+	local targets = selector.get_sources(item.source)
+	if vim.tbl_isempty(targets) then
+		vim.notify("No other scope configured to migrate to.", vim.log.levels.WARN)
+		return
+	end
+	local function prompt_confirm(target)
+		if not target then
+			return
+		end
+		vim.ui.input({
+			prompt = string.format(
+				"Move %s from %s to %s scope? (y/n): ",
+				vim.fn.fnamemodify(item.path, ":t"),
+				item.source,
+				target.source
+			),
+		}, function(input)
+			if input and (input:lower() == "y" or input:lower() == "yes") then
+				move_scratch_file(item, target)
+			else
+				vim.notify("Migration cancelled.", vim.log.levels.INFO)
+			end
+		end)
+	end
+	if #targets == 1 then
+		prompt_confirm(targets[1])
+	else
+		selector.select_source(prompt_confirm, "Select target scope for migration", item.source)
+	end
+end
+
+--- Migrates the current scratch file (or a selected one) to another scope.
+--- If the current buffer is not a scratch file, prompts the user to select one first.
+function M.migrate_scratch_file()
+	local current_item = get_current_scratch_item()
+	if current_item then
+		confirm_migrate(current_item)
+		return
+	end
+	selector.select_file("Select a scratch file to migrate", function(item)
+		if item then
+			confirm_migrate(item)
+		end
+	end)
+end
+
 function M.create_scratch_file()
 	selector.select_source(function(source)
 		if not source then

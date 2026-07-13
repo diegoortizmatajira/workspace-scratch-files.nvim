@@ -133,6 +133,7 @@ require('workspace-scratch-files').setup({
 | `:ScratchSearch` | Search and open existing scratch files. With Telescope, press `<c-d>` to delete. |
 | `:ScratchDelete` | Select and delete a scratch file (with confirmation). |
 | `:ScratchDelete!` | Select and delete a scratch file (skips confirmation). |
+| `:ScratchMigrate` | Migrate the current (or a selected) scratch file to another scope, e.g. workspace to global. |
 
 ### Suggested Keymaps
 
@@ -140,6 +141,7 @@ require('workspace-scratch-files').setup({
 vim.keymap.set("n", "<leader>sn", "<cmd>ScratchNew<cr>", { desc = "New scratch file" })
 vim.keymap.set("n", "<leader>ss", "<cmd>ScratchSearch<cr>", { desc = "Search scratch files" })
 vim.keymap.set("n", "<leader>sd", "<cmd>ScratchDelete<cr>", { desc = "Delete scratch file" })
+vim.keymap.set("n", "<leader>sm", "<cmd>ScratchMigrate<cr>", { desc = "Migrate scratch file scope" })
 ```
 
 ---
