@@ -173,6 +173,68 @@ function M.migrate_scratch_file()
 	end)
 end
 
+local clipboard_filename = "Clipboard.txt"
+
+--- Retrieves the full path to the global clipboard scratch file.
+--- @return string? The path to the clipboard scratch file, or nil if the global source isn't configured.
+local function get_clipboard_path()
+	if not config.current then
+		vim.notify("Configuration not found!", vim.log.levels.ERROR)
+		return nil
+	end
+	local path_or_func = config.current.sources.global
+	if not path_or_func then
+		vim.notify("No 'global' source configured for the clipboard scratch file.", vim.log.levels.ERROR)
+		return nil
+	end
+	local source_path = type(path_or_func) == "function" and path_or_func() or path_or_func
+	return source_path .. clipboard_filename
+end
+
+--- Opens the global clipboard scratch file, creating it if it doesn't exist.
+function M.open_clipboard_scratch_file()
+	local path = get_clipboard_path()
+	if not path then
+		return
+	end
+	vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+	if vim.fn.filereadable(path) == 0 then
+		vim.fn.writefile({}, path)
+	end
+	vim.cmd("edit " .. vim.fn.fnameescape(path))
+end
+
+--- Yanks the current (or last) visual selection and overwrites the clipboard scratch file with it.
+function M.yank_to_clipboard_scratch_file()
+	local path = get_clipboard_path()
+	if not path then
+		return
+	end
+	vim.cmd([[normal! gvy]])
+	local content = vim.fn.getreg('"'):gsub("\n$", "")
+	local lines = vim.split(content, "\n", { plain = true })
+	vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+	vim.fn.writefile(lines, path)
+	vim.notify("Yanked selection to clipboard scratch file: " .. path)
+end
+
+--- Copies the clipboard scratch file content into the system clipboard and pastes it in the current buffer.
+function M.paste_from_clipboard_scratch_file()
+	local path = get_clipboard_path()
+	if not path then
+		return
+	end
+	if vim.fn.filereadable(path) == 0 then
+		vim.notify("Clipboard scratch file does not exist: " .. path, vim.log.levels.WARN)
+		return
+	end
+	local lines = vim.fn.readfile(path)
+	local content = table.concat(lines, "\n")
+	local regtype = #lines > 1 and "l" or "c"
+	vim.fn.setreg("+", content, regtype)
+	vim.cmd([[normal! "+p]])
+end
+
 function M.create_scratch_file()
 	selector.select_source(function(source)
 		if not source then

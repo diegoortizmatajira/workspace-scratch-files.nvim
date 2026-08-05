@@ -19,6 +19,15 @@ function M.setup(opts)
 	vim.api.nvim_create_user_command("ScratchMigrate", function()
 		core.migrate_scratch_file()
 	end, { nargs = 0 })
+	vim.api.nvim_create_user_command("ScratchClipboard", function()
+		core.open_clipboard_scratch_file()
+	end, { nargs = 0 })
+	vim.api.nvim_create_user_command("ScratchYankToClipboard", function()
+		core.yank_to_clipboard_scratch_file()
+	end, { nargs = 0, range = true })
+	vim.api.nvim_create_user_command("ScratchPasteFromClipboard", function()
+		core.paste_from_clipboard_scratch_file()
+	end, { nargs = 0 })
 end
 
 return M

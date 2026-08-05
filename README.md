@@ -134,6 +134,9 @@ require('workspace-scratch-files').setup({
 | `:ScratchDelete` | Select and delete a scratch file (with confirmation). |
 | `:ScratchDelete!` | Select and delete a scratch file (skips confirmation). |
 | `:ScratchMigrate` | Migrate the current (or a selected) scratch file to another scope, e.g. workspace to global. |
+| `:ScratchClipboard` | Open the global `Clipboard.txt` scratch file. |
+| `:ScratchYankToClipboard` | Yank the current visual selection and overwrite the clipboard scratch file with it. |
+| `:ScratchPasteFromClipboard` | Copy the clipboard scratch file content into the system clipboard and paste it in the current buffer. |
 
 ### Suggested Keymaps
 
@@ -142,6 +145,9 @@ vim.keymap.set("n", "<leader>sn", "<cmd>ScratchNew<cr>", { desc = "New scratch f
 vim.keymap.set("n", "<leader>ss", "<cmd>ScratchSearch<cr>", { desc = "Search scratch files" })
 vim.keymap.set("n", "<leader>sd", "<cmd>ScratchDelete<cr>", { desc = "Delete scratch file" })
 vim.keymap.set("n", "<leader>sm", "<cmd>ScratchMigrate<cr>", { desc = "Migrate scratch file scope" })
+vim.keymap.set("n", "<leader>sc", "<cmd>ScratchClipboard<cr>", { desc = "Open clipboard scratch file" })
+vim.keymap.set("x", "<leader>sy", "<cmd>ScratchYankToClipboard<cr>", { desc = "Yank selection to clipboard scratch file" })
+vim.keymap.set("n", "<leader>sp", "<cmd>ScratchPasteFromClipboard<cr>", { desc = "Paste from clipboard scratch file" })
 ```
 
 ---
