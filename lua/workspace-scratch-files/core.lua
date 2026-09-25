@@ -210,7 +210,17 @@ function M.yank_to_clipboard_scratch_file()
 	if not path then
 		return
 	end
-	vim.cmd([[normal! gvy]])
+	-- <Cmd> mappings (as recommended in the README) keep Visual mode active
+	-- instead of exiting it, so the selection is already live here and `gv`
+	-- would wrongly reselect the *previous* area from stale '</'> marks.
+	-- Only reselect with `gv` when we've already left Visual mode, e.g. when
+	-- invoked via `:'<,'>ScratchYankToClipboard` from the command line.
+	local mode = vim.fn.mode()
+	if mode == "v" or mode == "V" or mode == "\22" then
+		vim.cmd([[normal! y]])
+	else
+		vim.cmd([[normal! gvy]])
+	end
 	local content = vim.fn.getreg('"'):gsub("\n$", "")
 	local lines = vim.split(content, "\n", { plain = true })
 	vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
