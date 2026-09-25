@@ -213,4 +213,70 @@ describe("core", function()
 			assert.are.equal(1, vim.fn.filereadable(dir_b .. "picked.txt"))
 		end)
 	end)
+
+	describe("yank_to_clipboard_scratch_file", function()
+		local clipboard_dir, clipboard_path
+
+		before_each(function()
+			config.current = nil
+			clipboard_dir = vim.fn.tempname() .. "/clipboard/"
+			vim.fn.mkdir(clipboard_dir, "p")
+			config.update({
+				sources = {
+					global = clipboard_dir,
+				},
+			})
+			clipboard_path = clipboard_dir .. "Clipboard.txt"
+			vim.keymap.set(
+				"x",
+				"<F2>",
+				"<Cmd>lua require('workspace-scratch-files.core').yank_to_clipboard_scratch_file()<CR>"
+			)
+		end)
+
+		after_each(function()
+			pcall(vim.keymap.del, "x", "<F2>")
+			local files = vim.fn.glob(clipboard_dir .. "*", false, true)
+			for _, f in ipairs(files) do
+				local bufnr = vim.fn.bufnr(f)
+				if bufnr ~= -1 then
+					vim.api.nvim_buf_delete(bufnr, { force = true })
+				end
+				vim.uv.fs_unlink(f)
+			end
+			vim.fn.delete(clipboard_dir, "d")
+		end)
+
+		it("yanks the live selection, not a stale one, when invoked via a <Cmd> mapping that keeps Visual mode active", function()
+			-- <Cmd> mappings (as used by the README's suggested visual-mode
+			-- keymap) keep Visual mode active instead of exiting it, unlike a
+			-- ":" mapping. `gv` must not be used unconditionally here, or it
+			-- would reselect the previous area from stale '</'> marks instead
+			-- of the live selection.
+			vim.cmd("enew")
+			vim.api.nvim_buf_set_lines(0, 0, -1, false, { "FIRST_SELECTION", "SECOND_SELECTION" })
+
+			vim.api.nvim_win_set_cursor(0, { 1, 0 })
+			vim.cmd([[normal! V]])
+			vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<F2>", true, false, true), "x", false)
+			assert.are.same({ "FIRST_SELECTION" }, vim.fn.readfile(clipboard_path))
+
+			vim.api.nvim_win_set_cursor(0, { 2, 0 })
+			vim.cmd([[normal! V]])
+			vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<F2>", true, false, true), "x", false)
+			assert.are.same({ "SECOND_SELECTION" }, vim.fn.readfile(clipboard_path))
+		end)
+
+		it("reselects with gv when invoked after Visual mode has already ended, e.g. ':'<,'>ScratchYankToClipboard'", function()
+			vim.cmd("enew")
+			vim.api.nvim_buf_set_lines(0, 0, -1, false, { "ONLY_LINE" })
+			vim.api.nvim_win_set_cursor(0, { 1, 0 })
+			vim.cmd([[normal! V]])
+			vim.cmd("normal! \27") -- Esc: leave Visual mode, setting '</'> to the selection
+
+			core.yank_to_clipboard_scratch_file()
+
+			assert.are.same({ "ONLY_LINE" }, vim.fn.readfile(clipboard_path))
+		end)
+	end)
 end)
